@@ -109,6 +109,13 @@ mm_malloc(size_t size)
 	//are aligned
 	size_t csz = hdr_size + size;
 
+	//to obtain a free chunk p to satisfy this request.
+	//
+	//The code logic should be:
+	//Try to find a free chunk using helper function first_fit
+	//    If found, split the chunk (using helper function split).
+	//    If not found, ask OS for new memory using helper ask_os_for_chunk
+	//Set the chunk's status to be allocated
 	header_t *p = first_fit(csz);
 	if(p == NULL){
 		p = ask_os_for_chunk(csz);
@@ -118,16 +125,6 @@ mm_malloc(size_t size)
 		split(p, csz);
 	p->allocated = true;
 	p = p+1;
-
-	//Your code here 
-	//to obtain a free chunk p to satisfy this request.
-	//
-	//The code logic should be:
-	//Try to find a free chunk using helper function first_fit
-	//    If found, split the chunk (using helper function split).
-	//    If not found, ask OS for new memory using helper ask_os_for_chunk
-	//Set the chunk's status to be allocated
-
 
 	//After finishing obtaining free chunk p, 
 	//check heap correctness to catch bugs
@@ -142,7 +139,7 @@ mm_malloc(size_t size)
 header_t *
 payload2header(void *p)
 {
-	header_t* ptr = ((header_t*) p)-1;
+	header_t* ptr = (header_t*) p-1;
 	return ptr;
 }
 
@@ -216,10 +213,9 @@ mm_realloc(void *ptr, size_t size)
 		return ptr;
 	}
 	//allocate a new chunk and free original chunk
-	char* new_ptr = (char*)mm_malloc(size);
-	char* old_ptr = (char*)ptr;
-	for(int i = 0; i < original_size - hdr_size; i++)
-		*(new_ptr + i) = *(old_ptr + i);
+	void* new_ptr = mm_malloc(size);
+	void* old_ptr = (char*)ptr;
+	memcpy(new_ptr, old_ptr, h->size);
 	mm_free(ptr);
 	return (void*) new_ptr;
 	  
